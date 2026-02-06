@@ -1,0 +1,65 @@
+{
+	"$schema": "https://biomejs.dev/schemas/2.2.5/schema.json",
+	"vcs": {
+		"enabled": false,
+		"clientKind": "git",
+		"useIgnoreFile": false
+	},
+	"formatter": {
+		"enabled": true,
+		"indentStyle": "tab"
+	},
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"recommended": true
+		}
+	},
+	"overrides": [
+		{
+			"includes": ["marketing/src/lib/components/ui/data-table/**"],
+			"linter": {
+				"enabled": false
+			},
+			"formatter": {
+				"enabled": false
+			}
+		},
+		{
+			"includes": ["src/components/ui/**", "src/App.css", "marketing/src/lib/components/ui/**"],
+			"linter": {
+				"enabled": false
+			},
+			"formatter": {
+				"enabled": true
+			}
+		},
+		{
+			"includes": [
+				"marketing/.svelte-kit/**",
+				"marketing/.wrangler/**",
+				"marketing/node_modules/**",
+				"marketing/src/lib/components/ui/**"
+			],
+			"linter": {
+				"enabled": false
+			},
+			"formatter": {
+				"enabled": false
+			}
+		}
+	],
+	"javascript": {
+		"formatter": {
+			"quoteStyle": "double"
+		}
+	},
+	"assist": {
+		"enabled": true,
+		"actions": {
+			"source": {
+				"organizeImports": "on"
+			}
+		}
+	}
+}
