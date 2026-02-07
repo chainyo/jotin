@@ -106,7 +106,7 @@ function CaptureWindow() {
 		setError(null);
 		setDraft("");
 		try {
-			await invoke("close_quick_capture");
+			await windowHandle.hide();
 		} catch {
 			void windowHandle.hide();
 		}

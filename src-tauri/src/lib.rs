@@ -2,6 +2,7 @@ use std::{
     fs,
     path::{Path, PathBuf},
     sync::Mutex,
+    time::Duration,
 };
 
 use chrono::Utc;
@@ -101,13 +102,13 @@ fn delete_note(app: AppHandle, state: State<'_, StorageState>, id: String) -> Re
 }
 
 #[tauri::command]
-fn open_quick_capture(app: AppHandle) {
-    show_capture_window(&app);
+fn open_quick_capture(app: AppHandle) -> Result<(), String> {
+    show_capture_window(&app)
 }
 
 #[tauri::command]
-fn close_quick_capture(app: AppHandle) {
-    hide_capture_window(&app);
+fn close_quick_capture(app: AppHandle) -> Result<(), String> {
+    hide_capture_window(&app)
 }
 
 #[tauri::command]
@@ -184,10 +185,13 @@ fn show_main_window(app: &AppHandle) {
     }
 }
 
-fn hide_capture_window(app: &AppHandle) {
+fn hide_capture_window(app: &AppHandle) -> Result<(), String> {
     if let Some(window) = app.get_webview_window(CAPTURE_WINDOW_LABEL) {
-        let _ = window.hide();
+        window
+            .hide()
+            .map_err(|e| format!("Failed to hide capture window: {e}"))?;
     }
+    Ok(())
 }
 
 fn position_capture_window_near_cursor(app: &AppHandle, window: &tauri::WebviewWindow) {
@@ -241,7 +245,41 @@ fn position_capture_window_near_cursor(app: &AppHandle, window: &tauri::WebviewW
     ));
 }
 
-fn show_capture_window(app: &AppHandle) {
+fn reveal_capture_window(app: &AppHandle, window: &tauri::WebviewWindow, reset_input: bool) {
+    position_capture_window_near_cursor(app, window);
+
+    if let Err(error) = window.show() {
+        eprintln!("Failed to show capture window: {error}");
+    }
+    if let Err(error) = window.unminimize() {
+        eprintln!("Failed to unminimize capture window: {error}");
+    }
+    if let Err(error) = window.set_focus() {
+        eprintln!("Failed to focus capture window: {error}");
+    }
+    if reset_input {
+        let _ = window.emit(CAPTURE_OPENED_EVENT, ());
+    }
+
+    let app_handle = app.clone();
+    std::thread::spawn(move || {
+        std::thread::sleep(Duration::from_millis(90));
+        if let Some(retry_window) = app_handle.get_webview_window(CAPTURE_WINDOW_LABEL) {
+            let is_visible = retry_window.is_visible().unwrap_or(false);
+            if !is_visible {
+                position_capture_window_near_cursor(&app_handle, &retry_window);
+                let _ = retry_window.show();
+                let _ = retry_window.unminimize();
+                let _ = retry_window.set_focus();
+                if reset_input {
+                    let _ = retry_window.emit(CAPTURE_OPENED_EVENT, ());
+                }
+            }
+        }
+    });
+}
+
+fn show_capture_window(app: &AppHandle) -> Result<(), String> {
     let window = if let Some(window) = app.get_webview_window(CAPTURE_WINDOW_LABEL) {
         window
     } else {
@@ -261,12 +299,13 @@ fn show_capture_window(app: &AppHandle) {
         .background_color(tauri::utils::config::Color(0, 0, 0, 0))
         .skip_taskbar(true)
         .always_on_top(true)
+        .visible(false)
         .build()
         {
             Ok(window) => window,
             Err(error) => {
                 eprintln!("Failed to create capture window: {error}");
-                return;
+                return Err(format!("Failed to create capture window: {error}"));
             }
         };
 
@@ -285,11 +324,8 @@ fn show_capture_window(app: &AppHandle) {
         created
     };
 
-    position_capture_window_near_cursor(app, &window);
-    let _ = window.show();
-    let _ = window.unminimize();
-    let _ = window.set_focus();
-    let _ = window.emit(CAPTURE_OPENED_EVENT, ());
+    reveal_capture_window(app, &window, true);
+    Ok(())
 }
 
 fn setup_tray(app: &AppHandle) -> Result<(), tauri::Error> {
@@ -308,7 +344,11 @@ fn setup_tray(app: &AppHandle) -> Result<(), tauri::Error> {
         .menu(&menu)
         .show_menu_on_left_click(false)
         .on_menu_event(|app, event| match event.id.as_ref() {
-            "new_note" => show_capture_window(app),
+            "new_note" => {
+                if let Err(error) = show_capture_window(app) {
+                    eprintln!("{error}");
+                }
+            }
             "open_notes" => show_main_window(app),
             "quit" => app.exit(0),
             _ => {}
@@ -339,7 +379,9 @@ fn setup_global_shortcut(app: &AppHandle) -> tauri::Result<()> {
     app.global_shortcut()
         .on_shortcut(shortcut, move |app, _shortcut, event| {
             if event.state() == ShortcutState::Pressed {
-                show_capture_window(app);
+                if let Err(error) = show_capture_window(app) {
+                    eprintln!("{error}");
+                }
             }
         })
         .map_err(|e| {
