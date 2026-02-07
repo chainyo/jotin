@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  Press <code>⌃⌥N</code>, jot your thought, hit <code>Enter</code>, done.
+  Press <code>⌃ + ⌥ + N</code>, jot your thought, hit <code>Enter</code>, done.
 </p>
 
 ---
