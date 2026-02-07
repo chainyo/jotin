@@ -17,41 +17,23 @@
 	},
 	"overrides": [
 		{
-			"includes": ["marketing/src/lib/components/ui/data-table/**"],
-			"linter": {
-				"enabled": false
-			},
-			"formatter": {
-				"enabled": false
-			}
-		},
-		{
-			"includes": ["src/components/ui/**", "src/App.css", "marketing/src/lib/components/ui/**"],
+			"includes": ["src/components/ui/**", "src/App.css"],
 			"linter": {
 				"enabled": false
 			},
 			"formatter": {
 				"enabled": true
 			}
-		},
-		{
-			"includes": [
-				"marketing/.svelte-kit/**",
-				"marketing/.wrangler/**",
-				"marketing/node_modules/**",
-				"marketing/src/lib/components/ui/**"
-			],
-			"linter": {
-				"enabled": false
-			},
-			"formatter": {
-				"enabled": false
-			}
 		}
 	],
 	"javascript": {
 		"formatter": {
 			"quoteStyle": "double"
+		}
+	},
+	"css": {
+		"parser": {
+			"tailwindDirectives": true
 		}
 	},
 	"assist": {
