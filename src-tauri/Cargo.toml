@@ -1,12 +1,12 @@
 [package]
-name = "desktop-app-template"
+name = "jotin"
 version = "0.1.0"
-description = "A Tauri App"
-authors = ["you"]
+description = "Fast, local-first note capture from your macOS menu bar"
+authors = ["chainyo"]
 edition = "2021"
 
 [lib]
-name = "desktop_app_template_lib"
+name = "jotin_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

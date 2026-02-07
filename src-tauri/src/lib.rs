@@ -67,7 +67,12 @@ fn create_note(app: AppHandle, state: State<'_, StorageState>, text: String) -> 
 }
 
 #[tauri::command]
-fn list_notes(app: AppHandle) -> Result<Vec<Note>, String> {
+fn list_notes(app: AppHandle, state: State<'_, StorageState>) -> Result<Vec<Note>, String> {
+    let _guard = state
+        .write_lock
+        .lock()
+        .map_err(|_| "Storage lock was poisoned".to_string())?;
+
     let path = resolve_notes_path(&app)?;
     let mut notes = load_notes_from_path(&path)?;
     notes.sort_by(|a, b| b.created_at.cmp(&a.created_at));
@@ -143,7 +148,21 @@ fn save_notes_to_path(path: &Path, notes: &[Note]) -> Result<(), String> {
     let payload = serde_json::to_string_pretty(notes)
         .map_err(|e| format!("Failed to serialize notes payload: {e}"))?;
 
-    fs::write(path, payload).map_err(|e| format!("Failed to write notes file: {e}"))
+    let temp_path = path.with_extension("json.tmp");
+    fs::write(&temp_path, payload).map_err(|e| format!("Failed to write temp notes file: {e}"))?;
+
+    match fs::rename(&temp_path, path) {
+        Ok(()) => Ok(()),
+        Err(rename_error) => {
+            if path.exists() {
+                fs::remove_file(path).map_err(|e| format!("Failed to replace notes file: {e}"))?;
+                fs::rename(&temp_path, path)
+                    .map_err(|e| format!("Failed to rename notes file after replace: {e}"))
+            } else {
+                Err(format!("Failed to rename notes file: {rename_error}"))
+            }
+        }
+    }
 }
 
 fn app_icon_image() -> Option<tauri::image::Image<'static>> {
@@ -241,7 +260,10 @@ fn show_capture_window(app: &AppHandle) {
         .build()
         {
             Ok(window) => window,
-            Err(_) => return,
+            Err(error) => {
+                eprintln!("Failed to create capture window: {error}");
+                return;
+            }
         };
 
         if let Some(icon) = app_icon_image() {
@@ -297,10 +319,6 @@ fn setup_tray(app: &AppHandle) -> Result<(), tauri::Error> {
                 show_main_window(tray.app_handle());
             }
         });
-
-    if let Some(icon) = app.default_window_icon().cloned() {
-        tray = tray.icon(icon);
-    }
 
     if let Some(icon) = app_icon_image() {
         tray = tray.icon(icon);
