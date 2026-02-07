@@ -1,6 +1,6 @@
 [package]
 name = "jotin"
-version = "0.1.0"
+version = "1.0.0"
 description = "Fast, local-first note capture from your macOS menu bar"
 authors = ["chainyo"]
 edition = "2021"
