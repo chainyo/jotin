@@ -265,15 +265,12 @@ fn reveal_capture_window(app: &AppHandle, window: &tauri::WebviewWindow, reset_i
     std::thread::spawn(move || {
         std::thread::sleep(Duration::from_millis(90));
         if let Some(retry_window) = app_handle.get_webview_window(CAPTURE_WINDOW_LABEL) {
-            let is_visible = retry_window.is_visible().unwrap_or(false);
-            if !is_visible {
-                position_capture_window_near_cursor(&app_handle, &retry_window);
-                let _ = retry_window.show();
-                let _ = retry_window.unminimize();
-                let _ = retry_window.set_focus();
-                if reset_input {
-                    let _ = retry_window.emit(CAPTURE_OPENED_EVENT, ());
-                }
+            position_capture_window_near_cursor(&app_handle, &retry_window);
+            let _ = retry_window.show();
+            let _ = retry_window.unminimize();
+            let _ = retry_window.set_focus();
+            if reset_input {
+                let _ = retry_window.emit(CAPTURE_OPENED_EVENT, ());
             }
         }
     });

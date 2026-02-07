@@ -38,6 +38,7 @@ const FOCUS_INPUT_ATTEMPTS = 8;
 const FOCUS_INPUT_MISSING_DELAY_MS = 30;
 const FOCUS_INPUT_RETRY_DELAY_MS = 35;
 const CAPTURE_REFOCUS_DELAY_MS = 120;
+const CAPTURE_REFOCUS_DELAY_SECONDARY_MS = 240;
 const COPY_FEEDBACK_DELAY_MS = 1200;
 const windowHandle = getCurrentWindow();
 type ThemeMode = "light" | "dark";
@@ -106,7 +107,7 @@ function CaptureWindow() {
 		setError(null);
 		setDraft("");
 		try {
-			await windowHandle.hide();
+			await invoke("close_quick_capture");
 		} catch {
 			void windowHandle.hide();
 		}
@@ -141,6 +142,7 @@ function CaptureWindow() {
 			setError(null);
 			focusInput();
 			setTimeout(() => focusInput(), CAPTURE_REFOCUS_DELAY_MS);
+			setTimeout(() => focusInput(), CAPTURE_REFOCUS_DELAY_SECONDARY_MS);
 		}).then((unlisten) => {
 			if (disposed) {
 				unlisten();
