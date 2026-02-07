@@ -153,16 +153,20 @@ fn save_notes_to_path(path: &Path, notes: &[Note]) -> Result<(), String> {
 
     match fs::rename(&temp_path, path) {
         Ok(()) => Ok(()),
-        Err(rename_error) => {
-            if path.exists() {
-                fs::remove_file(path).map_err(|e| format!("Failed to replace notes file: {e}"))?;
-                fs::rename(&temp_path, path)
-                    .map_err(|e| format!("Failed to rename notes file after replace: {e}"))
-            } else {
-                Err(format!("Failed to rename notes file: {rename_error}"))
+        Err(rename_error) => match fs::copy(&temp_path, path) {
+            Ok(_) => {
+                if let Err(cleanup_error) = fs::remove_file(&temp_path) {
+                    eprintln!(
+                        "Saved notes via copy fallback, but failed to remove temp file: {cleanup_error}"
+                    );
+                }
+                Ok(())
             }
-        }
-    }
+            Err(copy_error) => Err(format!(
+                "Failed to finalize notes file. rename error: {rename_error}; copy error: {copy_error}"
+            )),
+        },
+            }
 }
 
 fn app_icon_image() -> Option<tauri::image::Image<'static>> {
