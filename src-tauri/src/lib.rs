@@ -2,7 +2,7 @@ use std::{
     fs,
     path::{Path, PathBuf},
     sync::Mutex,
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 use chrono::Utc;
@@ -22,7 +22,9 @@ const NOTES_CHANGED_EVENT: &str = "notes-changed";
 const CAPTURE_OPENED_EVENT: &str = "capture-opened";
 const CAPTURE_WINDOW_WIDTH: f64 = 900.0;
 const CAPTURE_WINDOW_HEIGHT: f64 = 76.0;
+const DOUBLE_SHORTCUT_WINDOW_MS: u64 = 450;
 const APP_ICON: tauri::image::Image<'_> = tauri::include_image!("./icons/32x32.png");
+static LAST_SHORTCUT_PRESS: Mutex<Option<Instant>> = Mutex::new(None);
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -376,7 +378,31 @@ fn setup_global_shortcut(app: &AppHandle) -> tauri::Result<()> {
     app.global_shortcut()
         .on_shortcut(shortcut, move |app, _shortcut, event| {
             if event.state() == ShortcutState::Pressed {
-                if let Err(error) = show_capture_window(app) {
+                let now = Instant::now();
+                let is_double_press = LAST_SHORTCUT_PRESS
+                    .lock()
+                    .map(|mut last_press| {
+                        let was_recent = last_press
+                            .map(|previous| {
+                                now.duration_since(previous)
+                                    <= Duration::from_millis(DOUBLE_SHORTCUT_WINDOW_MS)
+                            })
+                            .unwrap_or(false);
+
+                        if was_recent {
+                            *last_press = None;
+                        } else {
+                            *last_press = Some(now);
+                        }
+
+                        was_recent
+                    })
+                    .unwrap_or(false);
+
+                if is_double_press {
+                    show_main_window(app);
+                    let _ = hide_capture_window(app);
+                } else if let Err(error) = show_capture_window(app) {
                     eprintln!("{error}");
                 }
             }
