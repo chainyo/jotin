@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "desktop-app-template",
+  "productName": "Jotin",
   "version": "0.1.0",
-  "identifier": "com.chainyo.desktop-app-template",
+  "identifier": "com.chainyo.jotin",
   "build": {
     "beforeDevCommand": "bun run dev",
     "devUrl": "http://localhost:1420",
@@ -10,11 +10,17 @@
     "frontendDist": "../dist"
   },
   "app": {
+    "macOSPrivateApi": true,
     "windows": [
       {
-        "title": "desktop-app-template",
-        "width": 800,
-        "height": 600
+        "label": "main",
+        "title": "Jotin",
+        "width": 540,
+        "height": 720,
+        "visible": false,
+        "resizable": true,
+        "minimizable": true,
+        "maximizable": false
       }
     ],
     "security": {
